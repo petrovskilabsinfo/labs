@@ -1,152 +1,348 @@
-import React, { useState } from 'react';
-import { Heart, Coffee, Zap, Star, Gift } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import type { FC } from 'react';
+import { Heart, Coffee, Zap, Star, Gift, X } from 'lucide-react';
 
 interface DonationBlockProps {
   isDark: boolean;
   currentLanguage: string;
+  onClose?: () => void;
 }
 
-const donationTexts = {
+const donationTexts: Record<string, any> = {
   en: {
-    title: "Support ColorAdapt Development",
-    subtitle: "Help us bring better visual comfort to everyone",
-    description: "Your support helps us continue developing ColorAdapt and adding new features for visual accessibility.",
+    title: "Support PetrovskiStudio",
+    subtitle: "Creating a Better Future for Everyone.",
     amounts: ["Buy me a coffee", "Support development", "Premium support", "Custom amount"],
     thankYou: "Thank you for your support! 💜",
-    thankYouMessage: "Your contribution helps make ColorAdapt better for everyone!",
+    thankYouMessage: "💜",
     poweredBy: "Powered by PayPal",
     enterAmount: "Enter amount",
     donateButton: "Donate"
   },
-  ru: {
-    title: "Поддержите разработку ColorAdapt",
-    subtitle: "Помогите нам создавать лучший визуальный комфорт для всех",
-    description: "Ваша поддержка помогает нам продолжать разработку ColorAdapt и добавлять новые функции для визуальной доступности.",
-    amounts: ["Купить кофе", "Поддержать разработку", "Премиум поддержка", "Своя сумма"],
-    thankYou: "Спасибо за вашу поддержку! 💜",
-    thankYouMessage: "Ваш вклад помогает сделать ColorAdapt лучше для всех!",
-    poweredBy: "При поддержке PayPal",
-    enterAmount: "Введите сумму",
-    donateButton: "Поддержать"
-  },
   es: {
-    title: "Apoya el desarrollo de ColorAdapt",
-    subtitle: "Ayúdanos a brindar mejor comodidad visual para todos",
-    description: "Tu apoyo nos ayuda a continuar desarrollando ColorAdapt y agregando nuevas funciones para la accesibilidad visual.",
-    amounts: ["Cómprame un café", "Apoyar desarrollo", "Soporte premium", "Cantidad personalizada"],
+    title: "Apoya a PetrovskiStudio",
+    subtitle: "Creando un Mejor Futuro para Todos.",
+    amounts: ["Invítame un café", "Apoya el desarrollo", "Soporte premium", "Cantidad personalizada"],
     thankYou: "¡Gracias por tu apoyo! 💜",
-    thankYouMessage: "¡Tu contribución ayuda a hacer ColorAdapt mejor para todos!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "Ingrese cantidad",
+    thankYouMessage: "💜",
+    poweredBy: "Con tecnología de PayPal",
+    enterAmount: "Ingresa la cantidad",
     donateButton: "Donar"
   },
-  fr: {
-    title: "Soutenez le développement de ColorAdapt",
-    subtitle: "Aidez-nous à apporter un meilleur confort visuel à tous",
-    description: "Votre soutien nous aide à continuer le développement de ColorAdapt et à ajouter de nouvelles fonctionnalités pour l'accessibilité visuelle.",
-    amounts: ["Offrez-moi un café", "Soutenir le développement", "Support premium", "Montant personnalisé"],
-    thankYou: "Merci pour votre soutien ! 💜",
-    thankYouMessage: "Votre contribution aide à améliorer ColorAdapt pour tous !",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "Entrez le montant",
-    donateButton: "Faire un don"
-  },
-  de: {
-    title: "Unterstützen Sie die ColorAdapt-Entwicklung",
-    subtitle: "Helfen Sie uns, besseren visuellen Komfort für alle zu schaffen",
-    description: "Ihre Unterstützung hilft uns, ColorAdapt weiterzuentwickeln und neue Funktionen für visuelle Barrierefreiheit hinzuzufügen.",
-    amounts: ["Kaufen Sie mir einen Kaffee", "Entwicklung unterstützen", "Premium-Support", "Benutzerdefinierter Betrag"],
-    thankYou: "Vielen Dank für Ihre Unterstützung! 💜",
-    thankYouMessage: "Ihr Beitrag hilft, ColorAdapt für alle besser zu machen!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "Betrag eingeben",
-    donateButton: "Spenden"
-  },
-  ja: {
-    title: "ColorAdapt開発をサポート",
-    subtitle: "皆様により良い視覚的快適性を提供するためにご協力ください",
-    description: "あなたのサポートは、ColorAdaptの開発を継続し、視覚的アクセシビリティのための新機能を追加するのに役立ちます。",
-    amounts: ["コーヒーをおごる", "開発をサポート", "プレミアムサポート", "カスタム金額"],
-    thankYou: "ご支援ありがとうございます！💜",
-    thankYouMessage: "あなたの貢献はColorAdaptをみんなのためにより良くします！",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "金額を入力",
-    donateButton: "寄付する"
-  },
-  ar: {
-    title: "دعم تطوير ColorAdapt",
-    subtitle: "ساعدنا في توفير راحة بصرية أفضل للجميع",
-    description: "دعمك يساعدنا على مواصلة تطوير ColorAdapt وإضافة ميزات جديدة لإمكانية الوصول البصري.",
-    amounts: ["اشتر لي قهوة", "دعم التطوير", "دعم مميز", "مبلغ مخصص"],
-    thankYou: "شكرا لدعمك! 💜",
-    thankYouMessage: "مساهمتك تساعد في جعل ColorAdapt أفضل للجميع!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "أدخل المبلغ",
-    donateButton: "تبرع"
-  },
-  hi: {
-    title: "ColorAdapt विकास का समर्थन करें",
-    subtitle: "हमें सभी के लिए बेहतर दृश्य आराम लाने में मदद करें",
-    description: "आपका समर्थन हमें ColorAdapt का विकास जारी रखने और दृश्य पहुंच के लिए नई सुविधाएं जोड़ने में मदद करता है।",
-    amounts: ["मुझे कॉफी खरीदें", "विकास का समर्थन करें", "प्रीमियम समर्थन", "कस्टम राशि"],
-    thankYou: "आपके समर्थन के लिए धन्यवाद! 💜",
-    thankYouMessage: "आपका योगदान सभी के लिए ColorAdapt को बेहतर बनाने में मदद करता है!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "राशि दर्ज करें",
-    donateButton: "दान करें"
-  },
-  it: {
-    title: "Sostieni lo sviluppo di ColorAdapt",
-    subtitle: "Aiutaci a portare un migliore comfort visivo a tutti",
-    description: "Il tuo supporto ci aiuta a continuare a sviluppare ColorAdapt e ad aggiungere nuove funzionalità per l'accessibilità visiva.",
-    amounts: ["Offrimi un caffè", "Sostieni lo sviluppo", "Supporto premium", "Importo personalizzato"],
-    thankYou: "Grazie per il tuo supporto! 💜",
-    thankYouMessage: "Il tuo contributo aiuta a rendere ColorAdapt migliore per tutti!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "Inserisci importo",
-    donateButton: "Dona"
-  },
   zh: {
-    title: "支持 ColorAdapt 开发",
-    subtitle: "帮助我们为所有人带来更好的视觉舒适度",
-    description: "您的支持帮助我们继续开发 ColorAdapt 并为视觉可访问性添加新功能。",
+    title: "支持 PetrovskiStudio",
+    subtitle: "为每个人创造更美好的未来。",
     amounts: ["请我喝咖啡", "支持开发", "高级支持", "自定义金额"],
     thankYou: "感谢您的支持！💜",
-    thankYouMessage: "您的贡献帮助 ColorAdapt 为所有人变得更好！",
-    poweredBy: "Powered by PayPal",
+    thankYouMessage: "💜",
+    poweredBy: "由 PayPal 提供支持",
     enterAmount: "输入金额",
     donateButton: "捐赠"
   },
-  tr: {
-    title: "ColorAdapt Geliştirmesini Destekleyin",
-    subtitle: "Herkese daha iyi görsel konfor getirmemize yardımcı olun",
-    description: "Desteğiniz ColorAdapt'i geliştirmeye devam etmemize ve görsel erişilebilirlik için yeni özellikler eklememize yardımcı oluyor.",
-    amounts: ["Bana bir kahve ısmarla", "Geliştirmeyi destekle", "Premium destek", "Özel miktar"],
-    thankYou: "Desteğiniz için teşekkürler! 💜",
-    thankYouMessage: "Katkınız ColorAdapt'i herkes için daha iyi hale getirmeye yardımcı oluyor!",
-    poweredBy: "Powered by PayPal",
-    enterAmount: "Miktar girin",
-    donateButton: "Bağış yap"
+  hi: {
+    title: "PetrovskiStudio का समर्थन करें",
+    subtitle: "सभी के लिए बेहतर भविष्य बना रहे हैं।",
+    amounts: ["मुझे एक कॉफी खरीदें", "विकास का समर्थन करें", "प्रीमियम सहायता", "कस्टम राशि"],
+    thankYou: "आपके समर्थन के लिए धन्यवाद! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal द्वारा संचालित",
+    enterAmount: "राशि दर्ज करें",
+    donateButton: "दान करें"
+  },
+  ar: {
+    title: "ادعم PetrovskiStudio",
+    subtitle: "بناء مستقبل أفضل للجميع.",
+    amounts: ["اشتري لي قهوة", "ادعم التطوير", "دعم ممتاز", "مبلغ مخصص"],
+    thankYou: "شكرًا لدعمك! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "مدعوم من PayPal",
+    enterAmount: "أدخل المبلغ",
+    donateButton: "تبرع"
+  },
+  pt: {
+    title: "Apoie PetrovskiStudio",
+    subtitle: "Criando um Futuro Melhor para Todos.",
+    amounts: ["Compre-me um café", "Apoie o desenvolvimento", "Suporte premium", "Valor personalizado"],
+    thankYou: "Obrigado pelo seu apoio! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Alimentado por PayPal",
+    enterAmount: "Digite o valor",
+    donateButton: "Doar"
+  },
+  ru: {
+    title: "Поддержите PetrovskiStudio",
+    subtitle: "Создавая лучшее будущее для всех.",
+    amounts: ["Купите мне кофе", "Поддержать разработку", "Премиум поддержка", "Произвольная сумма"],
+    thankYou: "Спасибо за вашу поддержку! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Работает на PayPal",
+    enterAmount: "Введите сумму",
+    donateButton: "Пожертвовать"
+  },
+  bn: {
+    title: "PetrovskiStudio কে সমর্থন করুন",
+    subtitle: "সবার জন্য একটি উন্নত ভবিষ্যৎ তৈরি করছি।",
+    amounts: ["আমাকে একটি কফি কিনুন", "উন্নয়ন সমর্থন করুন", "প্রিমিয়াম সমর্থন", "কাস্টম পরিমাণ"],
+    thankYou: "আপনার সমর্থনের জন্য ধন্যবাদ! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal দ্বারা পরিচালিত",
+    enterAmount: "পরিমাণ লিখুন",
+    donateButton: "দান করুন"
+  },
+  ja: {
+    title: "PetrovskiStudioをサポート",
+    subtitle: "みんなのためのより良い未来を創造しています。",
+    amounts: ["コーヒーをおごってください", "開発をサポート", "プレミアムサポート", "カスタム金額"],
+    thankYou: "ご支援ありがとうございます！💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal提供",
+    enterAmount: "金額を入力",
+    donateButton: "寄付する"
+  },
+  de: {
+    title: "PetrovskiStudio unterstützen",
+    subtitle: "Eine bessere Zukunft für alle schaffen.",
+    amounts: ["Kaufen Sie mir einen Kaffee", "Entwicklung unterstützen", "Premium-Support", "Benutzerdefinierter Betrag"],
+    thankYou: "Vielen Dank für Ihre Unterstützung! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Unterstützt von PayPal",
+    enterAmount: "Betrag eingeben",
+    donateButton: "Spenden"
   },
   ko: {
-    title: "ColorAdapt 개발 지원",
-    subtitle: "모든 사람에게 더 나은 시각적 편안함을 제공하는 데 도움을 주세요",
-    description: "귀하의 지원은 ColorAdapt를 계속 개발하고 시각적 접근성을 위한 새로운 기능을 추가하는 데 도움이 됩니다.",
+    title: "PetrovskiStudio 지원",
+    subtitle: "모든 이를 위한 더 나은 미래를 만들고 있습니다.",
     amounts: ["커피 사주기", "개발 지원", "프리미엄 지원", "사용자 지정 금액"],
     thankYou: "지원해 주셔서 감사합니다! 💜",
-    thankYouMessage: "귀하의 기여는 모든 사람을 위해 ColorAdapt를 더 좋게 만드는 데 도움이 됩니다!",
-    poweredBy: "Powered by PayPal",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal 제공",
     enterAmount: "금액 입력",
     donateButton: "기부하기"
+  },
+  fr: {
+    title: "Soutenir PetrovskiStudio",
+    subtitle: "Créer un meilleur avenir pour tous.",
+    amounts: ["Offrez-moi un café", "Soutenir le développement", "Support premium", "Montant personnalisé"],
+    thankYou: "Merci pour votre soutien ! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Propulsé par PayPal",
+    enterAmount: "Entrez le montant",
+    donateButton: "Faire un don"
+  },
+  pa: {
+    title: "PetrovskiStudio ਦਾ ਸਮਰਥਨ ਕਰੋ",
+    subtitle: "ਸਭ ਲਈ ਇੱਕ ਬਿਹਤਰ ਭਵਿੱਖ ਬਣਾ ਰਹੇ ਹਾਂ।",
+    amounts: ["ਮੈਨੂੰ ਇੱਕ ਕੌਫੀ ਖਰੀਦੋ", "ਵਿਕਾਸ ਦਾ ਸਮਰਥਨ ਕਰੋ", "ਪ੍ਰੀਮੀਅਮ ਸਹਾਇਤਾ", "ਕਸਟਮ ਰਕਮ"],
+    thankYou: "ਤੁਹਾਡੇ ਸਮਰਥਨ ਲਈ ਧੰਨਵਾਦ! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal ਦੁਆਰਾ ਸੰਚਾਲਿਤ",
+    enterAmount: "ਰਕਮ ਦਰਜ ਕਰੋ",
+    donateButton: "ਦਾਨ ਕਰੋ"
+  },
+  jv: {
+    title: "Dhukung PetrovskiStudio",
+    subtitle: "Nggawe Mangsa Depan sing Luwih Apik kanggo Kabeh.",
+    amounts: ["Tuku kopi kanggo aku", "Dhukung pangembangan", "Dhukungan premium", "Jumlah kustom"],
+    thankYou: "Matur nuwun kanggo dhukungane! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Didukung dening PayPal",
+    enterAmount: "Ketik jumlah",
+    donateButton: "Nyumbang"
+  },
+  te: {
+    title: "PetrovskiStudio ను మద్దతు ఇవ్వండి",
+    subtitle: "అందరికీ మెరుగైన భవిష్యత్తును సృష్టిస్తున్నాము.",
+    amounts: ["నాకు కాఫీ కొనండి", "అభివృద్ధిని మద్దతు ఇవ్వండి", "ప్రీమియం మద్దతు", "కస్టమ్ మొత్తం"],
+    thankYou: "మీ మద్దతుకు ధన్యవాదాలు! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal ద్వారా అందించబడింది",
+    enterAmount: "మొత్తం నమోదు చేయండి",
+    donateButton: "దానం చేయండి"
+  },
+  tr: {
+    title: "PetrovskiStudio'yu Destekleyin",
+    subtitle: "Herkes İçin Daha İyi Bir Gelecek Yaratıyoruz.",
+    amounts: ["Bana bir kahve ısmarla", "Geliştirmeyi destekle", "Premium destek", "Özel tutar"],
+    thankYou: "Desteğiniz için teşekkürler! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal ile desteklenmektedir",
+    enterAmount: "Tutarı girin",
+    donateButton: "Bağış Yap"
+  },
+  vi: {
+    title: "Hỗ trợ PetrovskiStudio",
+    subtitle: "Tạo tương lai tốt đẹp hơn cho mọi người.",
+    amounts: ["Mua cho tôi một ly cà phê", "Hỗ trợ phát triển", "Hỗ trợ cao cấp", "Số tiền tùy chỉnh"],
+    thankYou: "Cảm ơn bạn đã hỗ trợ! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Được hỗ trợ bởi PayPal",
+    enterAmount: "Nhập số tiền",
+    donateButton: "Quyên góp"
+  },
+  it: {
+    title: "Supporta PetrovskiStudio",
+    subtitle: "Creare un futuro migliore per tutti.",
+    amounts: ["Offrimi un caffè", "Supporta lo sviluppo", "Supporto premium", "Importo personalizzato"],
+    thankYou: "Grazie per il tuo sostegno! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Supportato da PayPal",
+    enterAmount: "Inserisci l'importo",
+    donateButton: "Dona"
+  },
+  th: {
+    title: "สนับสนุน PetrovskiStudio",
+    subtitle: "กำลังสร้างอนาคตที่ดีกว่าสำหรับทุกคน",
+    amounts: ["ซื้อกาแฟให้ฉัน", "สนับสนุนการพัฒนา", "การสนับสนุนระดับพรีเมียม", "จำนวนเงินที่กำหนดเอง"],
+    thankYou: "ขอบคุณสำหรับการสนับสนุนของคุณ! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "ขับเคลื่อนโดย PayPal",
+    enterAmount: "ใส่จำนวนเงิน",
+    donateButton: "บริจาค"
+  },
+  uk: {
+    title: "Підтримайте PetrovskiStudio",
+    subtitle: "Створюємо краще майбутнє для всіх.",
+    amounts: ["Купи мені каву", "Підтримати розробку", "Преміум підтримка", "Довільна сума"],
+    thankYou: "Дякуємо за вашу підтримку! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Працює на PayPal",
+    enterAmount: "Введіть суму",
+    donateButton: "Пожертвувати"
+  },
+  id: {
+    title: "Dukung PetrovskiStudio",
+    subtitle: "Menciptakan Masa Depan yang Lebih Baik untuk Semua Orang.",
+    amounts: ["Beli saya kopi", "Dukung pengembangan", "Dukungan premium", "Jumlah kustom"],
+    thankYou: "Terima kasih atas dukungan Anda! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Didukung oleh PayPal",
+    enterAmount: "Masukkan jumlah",
+    donateButton: "Donasi"
+  },
+  nl: {
+    title: "Steun PetrovskiStudio",
+    subtitle: "Een betere toekomst creëren voor iedereen.",
+    amounts: ["Koop me een koffie", "Ondersteun ontwikkeling", "Premium ondersteuning", "Aangepast bedrag"],
+    thankYou: "Bedankt voor uw steun! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Aangedreven door PayPal",
+    enterAmount: "Voer bedrag in",
+    donateButton: "Doneren"
+  },
+  pl: {
+    title: "Wesprzyj PetrovskiStudio",
+    subtitle: "Tworzenie lepszej przyszłości dla wszystkich.",
+    amounts: ["Kup mi kawę", "Wspieraj rozwój", "Wsparcie premium", "Niestandardowa kwota"],
+    thankYou: "Dziękujemy za wsparcie! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Wspierane przez PayPal",
+    enterAmount: "Wprowadź kwotę",
+    donateButton: "Wpłać darowiznę"
+  },
+  sv: {
+    title: "Stöd PetrovskiStudio",
+    subtitle: "Skapar en bättre framtid för alla.",
+    amounts: ["Köp en kaffe åt mig", "Stöd utveckling", "Premium stöd", "Anpassat belopp"],
+    thankYou: "Tack för ditt stöd! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Drivs av PayPal",
+    enterAmount: "Ange belopp",
+    donateButton: "Donera"
+  },
+  ro: {
+    title: "Sprijină PetrovskiStudio",
+    subtitle: "Creând un viitor mai bun pentru toți.",
+    amounts: ["Cumpără-mi o cafea", "Sprijină dezvoltarea", "Sprijin premium", "Sumă personalizată"],
+    thankYou: "Mulțumim pentru sprijin! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Alimentat de PayPal",
+    enterAmount: "Introdu suma",
+    donateButton: "Donează"
+  },
+  my: {
+    title: "PetrovskiStudio ကို ထောက်ခံပါ",
+    subtitle: "လူတိုင်းအတွက် ပိုမိုကောင်းမွန်သော အနာဂတ်ကို ဖန်တီးနေသည်။",
+    amounts: ["ကျွန်ုပ်အတွက် ကော်ဖီတစ်ခွက် ဝယ်ပါ", "ဖွံ့ဖြိုးတိုးတက်မှုကို ထောက်ခံပါ", "ပရီမီယံ ထောက်ခံမှု", "စိတ်ကြိုက် ပမာဏ"],
+    thankYou: "သင်၏ထောက်ခံမှုအတွက် ကျေးဇူးတင်ပါသည်! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "PayPal ဖြင့် မောင်းနှင်သည်",
+    enterAmount: "ပမာဏကို ထည့်သွင်းပါ",
+    donateButton: "လှူဒါန်းပါ"
+  },
+  hu: {
+    title: "Támogasd a PetrovskiStudio-t",
+    subtitle: "Jobb jövőt teremtünk mindenkinek.",
+    amounts: ["Vegyél nekem egy kávét", "Támogasd a fejlesztést", "Prémium támogatás", "Egyedi összeg"],
+    thankYou: "Köszönjük a támogatást! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "A PayPal támogatásával",
+    enterAmount: "Adja meg az összeget",
+    donateButton: "Adományozás"
+  },
+  cs: {
+    title: "Podpořte PetrovskiStudio",
+    subtitle: "Vytváření lepší budoucnosti pro všechny.",
+    amounts: ["Kupte mi kávu", "Podpořte vývoj", "Prémiová podpora", "Vlastní částka"],
+    thankYou: "Děkujeme za vaši podporu! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Poháněno PayPal",
+    enterAmount: "Zadejte částku",
+    donateButton: "Darovat"
+  },
+  el: {
+    title: "Υποστηρίξτε το PetrovskiStudio",
+    subtitle: "Δημιουργώντας ένα καλύτερο μέλλον για όλους.",
+    amounts: ["Αγοράστε μου έναν καφέ", "Υποστηρίξτε την ανάπτυξη", "Premium υποστήριξη", "Προσαρμοσμένο ποσό"],
+    thankYou: "Ευχαριστούμε για την υποστήριξή σας! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "Με την υποστήριξη PayPal",
+    enterAmount: "Εισάγετε ποσό",
+    donateButton: "Δωρεά"
+  },
+  he: {
+    title: "תמכו ב-PetrovskiStudio",
+    subtitle: "יוצרים עתיד טוב יותר לכולם.",
+    amounts: ["קנו לי קפה", "תמכו בפיתוח", "תמיכה פרימיום", "סכום מותאם אישית"],
+    thankYou: "תודה על התמיכה שלכם! 💜",
+    thankYouMessage: "💜",
+    poweredBy: "נתמך על ידי PayPal",
+    enterAmount: "הזן סכום",
+    donateButton: "תרמו"
   }
 };
 
-export const DonationBlock: React.FC<DonationBlockProps> = ({ isDark, currentLanguage }) => {
+// Fallback to English for languages not yet translated
+const getDonationText = (lang: string) => {
+  return donationTexts[lang] || donationTexts.en;
+};
+
+export const DonationBlock: FC<DonationBlockProps> = ({ isDark, currentLanguage, onClose }) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
 
-  const t = donationTexts[currentLanguage as keyof typeof donationTexts] || donationTexts.en;
+  const handleClose = useCallback(() => {
+    setIsVisible(false);
+    onClose?.();
+  }, [onClose]);
+
+  // Auto-hide after 8 seconds
+  useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
+
+    const timer = setTimeout(handleClose, 8000);
+
+    return () => clearTimeout(timer);
+  }, [handleClose, isVisible]);
+
+  if (!isVisible) {
+    return null;
+  }
+
+  const t = getDonationText(currentLanguage);
   
   const predefinedAmounts = [
     { amount: 3, icon: Coffee, label: t.amounts[0], color: 'from-amber-500 to-orange-500' },
@@ -171,7 +367,7 @@ export const DonationBlock: React.FC<DonationBlockProps> = ({ isDark, currentLan
     const finalAmount = amount === 0 ? parseFloat(customAmount) || 5 : amount;
     
     // PayPal donation URL using email address
-    const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent('hoper_Jay@i.ua')}&amount=${finalAmount}&currency_code=USD&item_name=${encodeURIComponent('ColorAdapt Development Support')}&no_note=0&cn=${encodeURIComponent('Message for developer (optional)')}&no_shipping=1&return=${encodeURIComponent('https://coloradapt-visual-co-cab6.bolt.host')}&cancel_return=${encodeURIComponent('https://coloradapt-visual-co-cab6.bolt.host')}`;
+    const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${encodeURIComponent('hoper_Jay@i.ua')}&amount=${finalAmount}&currency_code=USD&item_name=${encodeURIComponent('PetrovskiStudio Development Support')}&no_note=0&cn=${encodeURIComponent('Message for developer (optional)')}&no_shipping=1&return=${encodeURIComponent(window.location.origin)}&cancel_return=${encodeURIComponent(window.location.origin)}`;
     
     // Show thank you message and open PayPal
     setShowThankYou(true);
@@ -199,24 +395,33 @@ export const DonationBlock: React.FC<DonationBlockProps> = ({ isDark, currentLan
 
   return (
     <div className={`relative p-8 rounded-3xl ${themeClasses.background} border ${themeClasses.border} backdrop-blur-sm overflow-hidden`}>
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        className={`absolute top-4 right-4 z-20 p-2 rounded-full ${isDark ? 'bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white' : 'bg-white/70 hover:bg-white/90 text-gray-600 hover:text-gray-900'} transition-all duration-300`}
+        aria-label="Close"
+      >
+        <X className="w-5 h-5" />
+      </button>
+      
       {/* Decorative background */}
       <div className={`absolute inset-0 ${isDark ? 'bg-gradient-to-br from-purple-500/5 to-pink-500/5' : 'bg-gradient-to-br from-purple-100/50 to-pink-100/50'}`}></div>
-      
-      {/* Floating hearts animation */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <Heart
-            key={i}
-            className={`absolute w-4 h-4 text-pink-400/30 animate-pulse`}
-            style={{
-              left: `${20 + i * 15}%`,
-              top: `${10 + (i % 2) * 70}%`,
-              animationDelay: `${i * 0.5}s`,
-              animationDuration: `${2 + i * 0.3}s`
-            }}
-          />
-        ))}
-      </div>
+        
+        {/* Floating hearts animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(6)].map((_, i) => (
+            <Heart
+              key={i}
+              className={`absolute w-4 h-4 text-pink-400/30 animate-pulse`}
+              style={{
+                left: `${20 + i * 15}%`,
+                top: `${10 + (i % 2) * 70}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${2 + i * 0.3}s`
+              }}
+            />
+          ))}
+        </div>
 
       <div className="relative z-10">
         {/* Header */}
@@ -232,14 +437,11 @@ export const DonationBlock: React.FC<DonationBlockProps> = ({ isDark, currentLan
           <p className={`text-xl ${themeClasses.textSecondary} mb-4`}>
             {t.subtitle}
           </p>
-          <p className={`${themeClasses.textMuted} max-w-2xl mx-auto`}>
-            {t.description}
-          </p>
         </div>
 
         {/* Donation amounts */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {predefinedAmounts.map((item, index) => (
+            {predefinedAmounts.map((item, index) => (
             <button
               key={index}
               onClick={() => {
@@ -250,18 +452,18 @@ export const DonationBlock: React.FC<DonationBlockProps> = ({ isDark, currentLan
                 selectedAmount === item.amount ? 'border-purple-500' : themeClasses.border
               } ${themeClasses.cardHover} transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg`}
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${item.color} p-3 mb-4 mx-auto group-hover:scale-110 transition-transform duration-300`}>
-                <item.icon className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-center">
-                {item.amount > 0 && (
-                  <div className={`text-2xl font-bold ${themeClasses.text} mb-1`}>
-                    ${item.amount}
-                  </div>
-                )}
-                <div className={`text-sm ${themeClasses.textSecondary}`}>
-                  {item.label}
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${item.color} p-3 mb-4 mx-auto group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon className="w-6 h-6 text-white" />
                 </div>
+                <div className="text-center">
+                  {item.amount > 0 && (
+                    <div className={`text-2xl font-bold ${themeClasses.text} mb-1`}>
+                      ${item.amount}
+                    </div>
+                  )}
+                  <div className={`text-sm ${themeClasses.textSecondary}`}>
+                    {item.label}
+                  </div>
               </div>
             </button>
           ))}
