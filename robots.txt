@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /assets/
-Disallow: /src/
-Allow: /
-
-Sitemap: /sitemap.xml
